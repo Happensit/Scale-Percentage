@@ -1,0 +1,103 @@
+<?php
+
+/**
+ * @file
+ * Percentage Based Scale image module
+ *
+ */
+
+/**
+ * Implements hook_image_effect_info.
+ *
+ * @return array
+ */
+function percentage_scale_image_effect_info() {
+  $effects = array();
+
+  $effects['percentage_scale'] = array(
+    'label' => t('Percentage Scale'),
+    'help' => t('Scale images using percents as input values.'),
+    'effect callback' => 'image_percentage_scale_effect',
+    'form callback' => 'image_percentage_scale_form',
+    'summary theme' => 'image_percentage_scale_summary',
+  );
+
+  return $effects;
+}
+
+
+/**
+ * Form structure for the image scale form.
+ *
+ * @param $data
+ *   The current configuration for this scale effect.
+ */
+function image_percentage_scale_form($data) {
+  $form['scale_ratio'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Scale Ratio'),
+    '#default_value' => isset($data['scale_ratio']) ? $data['scale_ratio'] : '',
+    '#field_suffix' => ' %',
+    '#required' => TRUE,
+    '#size' => 10,
+    '#element_validate' => array('image_effect_integer_validate'),
+    '#allow_negative' => FALSE,
+  );
+  return $form;
+}
+
+/**
+ * Image effect callback; Scale an image resource.
+ *
+ * @param $image
+ *   An image object returned by image_load().
+ * @param $data
+ *   An array of attributes to use when performing the scale effect with the
+ *   following items:
+ *   - "scale_ratio": An integer representing the desired scale_ratio in percentage.
+ *
+ * @return
+ *   TRUE on success. FALSE on failure to scale image.
+ *
+ * @see image_scale()
+ */
+function image_percentage_scale_effect($image, $data) {
+  // Set sane default values.
+  $data += array(
+    'width' => NULL,
+    'height' => NULL,
+  );
+
+  $data['width'] = (integer) ($data['scale_ratio'] * $image->info['width'] / 100);
+  $data['height'] = (integer) ($data['scale_ratio'] * $image->info['height'] / 100);
+  if (!image_scale($image, $data['width'], $data['height'], TRUE)) {
+    watchdog('image', 'Image scale failed using the %toolkit toolkit on %path (%mimetype, %dimensions)', array('%toolkit' => $image->toolkit, '%path' => $image->source, '%mimetype' => $image->info['mime_type'], '%dimensions' => $image->info['width'] . 'x' . $image->info['height']), WATCHDOG_ERROR);
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function percentage_scale_theme() {
+  return array(
+    'image_percentage_scale_summary' => array(
+      'variables' => array('data' => NULL),
+    ),
+  );
+}
+
+/**
+ * Returns HTML for a summary of an image percentage scale effect.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - data: The current configuration for this percentage scale effect.
+ *
+ * @ingroup themeable
+ */
+function theme_image_percentage_scale_summary($variables) {
+  $data = $variables['data'];
+  return check_plain($data['scale_ratio']) . '%';
+}

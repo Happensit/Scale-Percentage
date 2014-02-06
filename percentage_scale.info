@@ -1,0 +1,8 @@
+name = Percentage Scale
+description = Scale images taking percentage as input values.
+package = Media
+core = 7.x
+version = 1.0(dev)
+dependencies[] = imagecache_actions
+
+files[] = percentage_scale.module
